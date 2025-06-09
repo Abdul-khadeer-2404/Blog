@@ -4,8 +4,8 @@ interface User {
   id: number;
   username: string;
   email: string;
-  profile_picture?: string;
-  bio?: string;
+  profile_picture?: string | null;
+  bio?: string | null;
 }
 
 interface AuthContextType {
@@ -32,13 +32,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (storedToken && storedUser) {
       try {
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        // Ensure profile_picture and bio are explicitly set, even if null from stored data
+        setUser({
+          id: parsedUser.id,
+          username: parsedUser.username,
+          email: parsedUser.email,
+          profile_picture: parsedUser.profile_picture || null,
+          bio: parsedUser.bio || null,
+        });
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        logout(); // Clear invalid data
       }
     }
   }, []);
@@ -69,6 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: data.user.id,
         username: data.user.username,
         email: data.user.email,
+        profile_picture: data.user.profile_picture || null,
+        bio: data.user.bio || null,
       };
 
       localStorage.setItem('token', data.access_token);
